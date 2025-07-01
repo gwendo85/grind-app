@@ -26,7 +26,7 @@ export default function HeaderDashboardClient({ firstName, avatarUrl, recentBadg
           height={40}
         />
         <div className="flex flex-col">
-          <span className="text-lg font-semibold text-gray-900">👋 Salut {firstName} !</span>
+          <span className="text-lg font-semibold text-gray-900">Bienvenue {firstName} !</span>
           <span className="text-sm text-indigo-600 font-medium">
             {(() => {
               const hour = new Date().getHours();

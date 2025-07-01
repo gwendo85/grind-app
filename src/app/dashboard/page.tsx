@@ -24,12 +24,12 @@ export default async function DashboardPage() {
 
   // Récupération du profil utilisateur
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, avatar_url')
+    .from('user_profiles')
+    .select('display_name, username')
     .eq('id', user.id)
     .single();
-  const firstName = profile?.full_name?.split(' ')[0] || 'Athlète';
-  const avatarUrl = profile?.avatar_url || '/default-avatar.png';
+  const firstName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'Athlète';
+  const avatarUrl = '/default-avatar.png';
 
   // TODO : Remplacer ce mock par la vraie récupération des badges récents depuis la DB
   const recentBadges = [
