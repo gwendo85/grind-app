@@ -168,3 +168,4 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 ---
 
 ⭐ N'oubliez pas de donner une étoile si ce projet vous a aidé !
+# grind-app
