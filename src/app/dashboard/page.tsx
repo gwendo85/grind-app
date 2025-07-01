@@ -379,4 +379,11 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
-}
+// Calculer la progression avec vérifications de sécurité
+const totalExercises = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
+const currentExercise = typeof workout.exercise_index === "number" ? workout.exercise_index : 0;
+const currentSet = typeof workout.set_index === "number" ? workout.set_index : 0;
+const totalSets = (Array.isArray(workout.exercises) && workout.exercises[currentExercise] && typeof workout.exercises[currentExercise].sets === "number")
+  ? workout.exercises[currentExercise].sets
+  : 1;
+const progress = totalExercises > 0 ? Math.round(((currentExercise * totalSets + currentSet) / (totalExercises * totalSets)) * 100) : 0;

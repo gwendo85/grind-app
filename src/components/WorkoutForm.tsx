@@ -202,6 +202,23 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
           </div>
         </div>
 
+        {/* Durée (pour cardio) */}
+        <div>
+          <label htmlFor="duration_minutes" className="block text-sm font-medium text-gray-700 mb-1">
+            Durée (minutes) - Optionnel
+          </label>
+          <input
+            type="number"
+            id="duration_minutes"
+            name="duration_minutes"
+            value={formData.duration_minutes || ''}
+            onChange={handleInputChange}
+            placeholder="30"
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
         {/* Notes */}
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
