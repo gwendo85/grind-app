@@ -294,7 +294,7 @@ export default function SessionFlowWithManager({
         </div>
         <button 
           className="btn btn-outline text-red-600" 
-          onClick={sessionFlow.showQuitModal}
+          onClick={sessionFlow.openQuitModal}
         >
           Quitter
         </button>
