@@ -228,6 +228,7 @@ export interface WorkoutFormData {
   date: string // Format YYYY-MM-DD
   status: 'planned' | 'completed'
   notes?: string
+  duration_minutes?: number
 }
 
 export interface UserProfileFormData {
