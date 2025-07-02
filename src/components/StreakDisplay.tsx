@@ -1,14 +1,27 @@
 "use client";
 
 import { formatStreak, getStreakMessage } from "@/lib/streakCalculator";
+import { useUserStats } from "../hooks/useUserStats";
 
 interface StreakDisplayProps {
-  currentStreak: number;
-  longestStreak: number;
-  lastWorkoutDate: Date | null;
+  userId: string;
 }
 
-export default function StreakDisplay({ currentStreak, longestStreak, lastWorkoutDate }: StreakDisplayProps) {
+export default function StreakDisplay({ userId }: StreakDisplayProps) {
+  const { currentStreak, longestStreak, lastWorkoutDate, loading } = useUserStats(userId);
+
+  // Loader si les données ne sont pas prêtes
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+        <div className="h-8 w-1/3 bg-gray-200 rounded mb-4"></div>
+        <div className="h-4 w-2/3 bg-gray-200 rounded mb-2"></div>
+        <div className="h-3 w-full bg-gray-200 rounded mb-2"></div>
+        <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
   const getStreakEmoji = (streak: number) => {
     if (streak === 0) return "💤";
     if (streak <= 3) return "🔥";
@@ -93,7 +106,7 @@ export default function StreakDisplay({ currentStreak, longestStreak, lastWorkou
               <div>
                 <div className="text-sm font-medium text-gray-900">Dernière séance</div>
                 <div className="text-sm text-green-600">
-                  {lastWorkoutDate.toLocaleDateString('fr-FR', {
+                  {new Date(lastWorkoutDate).toLocaleDateString('fr-FR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long'
@@ -102,7 +115,7 @@ export default function StreakDisplay({ currentStreak, longestStreak, lastWorkou
               </div>
             </div>
             <div className="text-xs text-green-600">
-              {Math.floor((new Date().getTime() - lastWorkoutDate.getTime()) / (1000 * 60 * 60 * 24))}j
+              {Math.floor((new Date().getTime() - new Date(lastWorkoutDate).getTime()) / (1000 * 60 * 60 * 24))}j
             </div>
           </div>
         </div>

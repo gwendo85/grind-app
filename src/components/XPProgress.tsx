@@ -1,31 +1,19 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useUserStats } from "../hooks/useUserStats";
 
 interface XPProgressProps {
-  totalXP: number | undefined | null;
+  userId: string;
 }
 
-export default function XPProgress({ totalXP }: XPProgressProps) {
-  // Loader si la donnée n'est pas prête
-  if (totalXP === undefined || totalXP === null) {
-    return (
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white animate-pulse">
-        <div className="h-8 w-1/3 bg-white bg-opacity-20 rounded mb-4"></div>
-        <div className="h-4 w-2/3 bg-white bg-opacity-10 rounded mb-2"></div>
-        <div className="h-3 w-full bg-white bg-opacity-10 rounded mb-2"></div>
-        <div className="h-3 w-1/2 bg-white bg-opacity-10 rounded"></div>
-      </div>
-    );
-  }
+export default function XPProgress({ userId }: XPProgressProps) {
+  const { totalXP, loading } = useUserStats(userId);
 
-  // Initialisation intelligente
-  const [animatedXP, setAnimatedXP] = useState(totalXP);
-  const [isAnimating, setIsAnimating] = useState(false);
+  // ✅ VERSION FIGÉE - AUCUNE ANIMATION
+  const [animatedXP, setAnimatedXP] = useState(0);
   const [barProgress, setBarProgress] = useState(0);
   const firstRender = useRef(true);
-  const barRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculer le niveau et la progression
   const calculateLevel = (xp: number) => {
@@ -46,60 +34,70 @@ export default function XPProgress({ totalXP }: XPProgressProps) {
 
   const levelData = calculateLevel(animatedXP);
 
-  // Animation fluide de l'XP (sauf au premier mount)
+  // ✅ MISE À JOUR SIMPLE SANS ANIMATION
   useEffect(() => {
     if (firstRender.current) {
-      setAnimatedXP(totalXP);
-      setBarProgress(calculateLevel(totalXP).progress);
+      setAnimatedXP(totalXP || 0);
+      setBarProgress(calculateLevel(totalXP || 0).progress);
       firstRender.current = false;
       return;
     }
-    if (totalXP !== animatedXP) {
-      setIsAnimating(true);
-      if (barRef.current) {
-        barRef.current.classList.add('animate-xp');
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-          barRef.current && barRef.current.classList.remove('animate-xp');
-        }, 500);
-      }
-      const startXP = animatedXP;
-      const endXP = totalXP;
-      const duration = 1000; // 1 seconde
-      const startTime = Date.now();
-
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Fonction d'easing pour une animation plus naturelle
-        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-        const currentXP = Math.floor(startXP + (endXP - startXP) * easeOutQuart);
-        
-        setAnimatedXP(currentXP);
-        setBarProgress(calculateLevel(currentXP).progress);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          setAnimatedXP(endXP);
-          setBarProgress(calculateLevel(endXP).progress);
-          setIsAnimating(false);
-        }
-      };
-
-      requestAnimationFrame(animate);
-    }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    
+    // Mise à jour directe sans animation
+    setAnimatedXP(totalXP || 0);
+    setBarProgress(calculateLevel(totalXP || 0).progress);
   }, [totalXP]);
 
+  // ✅ SKELETON LOADER STATIQUE
+  if (loading || totalXP === undefined || totalXP === null) {
+    return (
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white" style={{ minHeight: '160px' }}>
+        {/* Header avec étoile et niveau */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">⭐</div>
+            <div>
+              <div className="h-8 w-24 bg-white bg-opacity-20 rounded mb-1"></div>
+              <div className="h-4 w-20 bg-white bg-opacity-10 rounded"></div>
+            </div>
+          </div>
+          
+          {/* Badge de niveau skeleton */}
+          <div className="bg-white bg-opacity-20 rounded-full p-3">
+            <div className="w-6 h-6 bg-white bg-opacity-30 rounded"></div>
+          </div>
+        </div>
+
+        {/* Barre de progression skeleton */}
+        <div className="mb-3">
+          <div className="flex justify-between text-sm mb-1">
+            <div className="h-4 w-32 bg-white bg-opacity-20 rounded"></div>
+            <div className="h-4 w-8 bg-white bg-opacity-20 rounded"></div>
+          </div>
+          
+          <div className="w-full bg-white bg-opacity-20 rounded-full h-3 overflow-hidden">
+            <div className="bg-white bg-opacity-30 h-3 rounded-full w-1/3"></div>
+          </div>
+          
+          <div className="flex justify-between text-xs mt-1">
+            <div className="h-3 w-12 bg-white bg-opacity-10 rounded"></div>
+            <div className="h-3 w-12 bg-white bg-opacity-10 rounded"></div>
+          </div>
+        </div>
+
+        {/* Message skeleton */}
+        <div className="text-center">
+          <div className="h-4 w-48 bg-white bg-opacity-10 rounded mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-6 text-white" style={{ minHeight: '160px' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="text-3xl animate-bounce">⭐</div>
+          <div className="text-3xl">⭐</div>
           <div>
             <div className="gradient-card-text-overlay">
               <h2 className="text-2xl font-bold text-on-gradient">Niveau {levelData.level}</h2>
@@ -108,20 +106,17 @@ export default function XPProgress({ totalXP }: XPProgressProps) {
           </div>
         </div>
         
-        {/* Badge de niveau avec animation */}
-        <div className={`relative ${isAnimating ? 'animate-pulse' : ''}`}>
+        {/* Badge de niveau statique */}
+        <div className="relative">
           <div className="bg-white bg-opacity-20 rounded-full p-3">
             <div className="text-2xl font-bold text-center text-on-gradient">
               {levelData.level}
             </div>
           </div>
-          {isAnimating && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
-          )}
         </div>
       </div>
 
-      {/* Barre de progression avec animation */}
+      {/* Barre de progression statique */}
       <div className="mb-3">
         <div className="flex justify-between text-sm mb-1">
           <span className="text-on-gradient">Progression vers le niveau {levelData.level + 1}</span>
@@ -132,12 +127,9 @@ export default function XPProgress({ totalXP }: XPProgressProps) {
         
         <div className="w-full bg-white bg-opacity-20 rounded-full h-3 overflow-hidden">
           <div 
-            ref={barRef}
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-1000 ease-out relative"
+            className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full relative"
             style={{ width: `${barProgress}%` }}
           >
-            {/* Effet de brillance */}
-            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
           </div>
         </div>
         
@@ -156,15 +148,6 @@ export default function XPProgress({ totalXP }: XPProgressProps) {
           }
         </p>
       </div>
-
-      {/* Indicateur de progression récente */}
-      {isAnimating && (
-        <div className="mt-3 p-2 bg-white bg-opacity-10 rounded-lg text-center animate-fade-in">
-          <p className="text-sm text-yellow-300">
-            🚀 +{(totalXP - animatedXP).toLocaleString('fr-FR')} XP gagné !
-          </p>
-        </div>
-      )}
     </div>
   );
 } 

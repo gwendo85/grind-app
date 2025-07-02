@@ -101,7 +101,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg p-4 md:p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">🏋️‍♂️ Nouvelle Séance</h2>
       
       {error && (
@@ -128,7 +128,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
             name="date"
             value={formData.date}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
         </div>
@@ -145,7 +145,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
             value={formData.exercises[0].name}
             onChange={e => setFormData(prev => ({ ...prev, exercises: [{ ...prev.exercises[0], name: e.target.value }] }))}
             placeholder="Ex: Squat, Bench Press, Deadlift..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
         </div>
@@ -165,7 +165,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
               placeholder="80"
               min="0"
               step="0.5"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -181,7 +181,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
               onChange={e => setFormData(prev => ({ ...prev, exercises: [{ ...prev.exercises[0], reps: Number(e.target.value) }] }))}
               placeholder="8"
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
@@ -197,7 +197,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
               onChange={e => setFormData(prev => ({ ...prev, exercises: [{ ...prev.exercises[0], sets: Number(e.target.value) }] }))}
               placeholder="3"
               min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
             onChange={handleInputChange}
             placeholder="30"
             min="0"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
@@ -231,7 +231,7 @@ export default function WorkoutForm({ onWorkoutAdded }: WorkoutFormProps) {
             onChange={handleInputChange}
             placeholder="Comment s'est passée la séance ?"
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 

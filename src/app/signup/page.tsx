@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -15,7 +16,7 @@ export default function SignupPage() {
     setMessage('')
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
@@ -23,6 +24,12 @@ export default function SignupPage() {
       if (error) {
         setMessage(error.message)
       } else {
+        if (data.user) {
+          await supabase.from('user_profiles').upsert({
+            id: data.user.id,
+            display_name: displayName
+          })
+        }
         setMessage('Compte créé avec succès ! Vérifiez votre email pour confirmer votre compte.')
       }
     } catch {
@@ -75,6 +82,24 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+                Prénom ou pseudo
+              </label>
+              <div className="mt-1">
+                <input
+                  id="displayName"
+                  name="displayName"
+                  type="text"
+                  required
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Ex: Alex, Léa, IronMan..."
                 />
               </div>
             </div>

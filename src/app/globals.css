@@ -188,6 +188,60 @@ body {
   }
 }
 
+/* XP Progress - Élimination du scintillement */
+.xp-progress-container {
+  min-height: 160px;
+  transition: opacity 0.3s ease-out;
+}
+
+.xp-progress-skeleton {
+  min-height: 160px;
+  /* Même structure que le composant final */
+}
+
+.xp-progress-bar {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+/* Animation fluide pour les changements de niveau */
+.xp-level-change {
+  animation: level-change 0.5s ease-out;
+}
+
+@keyframes level-change {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Skeleton loader sans scintillement */
+.skeleton-loader {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* Toast notifications */
 .toast-enter {
   animation: slide-in-right 0.3s ease-out;

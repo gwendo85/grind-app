@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useUserStats } from "../hooks/useUserStats";
 
 interface BadgeSystemProps {
-  totalXP: number;
-  totalWorkouts: number;
-  currentStreak: number;
-  longestStreak: number;
+  userId: string;
 }
 
 interface Badge {
@@ -20,7 +18,21 @@ interface Badge {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
-export default function BadgeSystem({ totalXP, totalWorkouts, currentStreak, longestStreak }: BadgeSystemProps) {
+export default function BadgeSystem({ userId }: BadgeSystemProps) {
+  const { totalXP, currentStreak, longestStreak, totalWorkouts, loading } = useUserStats(userId);
+
+  // Loader si les données ne sont pas prêtes
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+        <div className="h-8 w-1/3 bg-gray-200 rounded mb-4"></div>
+        <div className="h-4 w-2/3 bg-gray-200 rounded mb-2"></div>
+        <div className="h-3 w-full bg-gray-200 rounded mb-2"></div>
+        <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
   // Définition de tous les badges
   const allBadges: Badge[] = [
     // Badges XP
@@ -202,16 +214,26 @@ export default function BadgeSystem({ totalXP, totalWorkouts, currentStreak, lon
     }
   ];
 
+  // Calculer les statistiques
   const unlockedBadges = allBadges.filter(badge => badge.unlocked);
-  const lockedBadges = allBadges.filter(badge => !badge.unlocked);
+  const totalBadges = allBadges.length;
+  const completionRate = Math.round((unlockedBadges.length / totalBadges) * 100);
+
+  // Grouper les badges par catégorie
+  const badgesByCategory = {
+    xp: allBadges.filter(badge => badge.category === 'xp'),
+    workouts: allBadges.filter(badge => badge.category === 'workouts'),
+    streak: allBadges.filter(badge => badge.category === 'streak'),
+    special: allBadges.filter(badge => badge.category === 'special')
+  };
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'common': return 'border-gray-300 bg-gray-50';
-      case 'rare': return 'border-blue-300 bg-blue-50';
-      case 'epic': return 'border-purple-300 bg-purple-50';
-      case 'legendary': return 'border-yellow-300 bg-yellow-50';
-      default: return 'border-gray-300 bg-gray-50';
+      case 'common': return 'bg-gray-100 text-gray-800';
+      case 'rare': return 'bg-blue-100 text-blue-800';
+      case 'epic': return 'bg-purple-100 text-purple-800';
+      case 'legendary': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -227,134 +249,104 @@ export default function BadgeSystem({ totalXP, totalWorkouts, currentStreak, lon
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="text-2xl">🏅</div>
+          <div className="text-2xl">🏆</div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">
-              Badges & Réalisations
+              Système de Badges
             </h3>
             <p className="text-sm text-gray-600">
-              {unlockedBadges.length} / {allBadges.length} badges débloqués
+              {unlockedBadges.length} / {totalBadges} badges débloqués ({completionRate}%)
             </p>
           </div>
         </div>
         <Link 
           href="/badges" 
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
         >
-          <span>Voir tous</span>
-          <span>→</span>
+          Voir tous →
         </Link>
       </div>
 
       {/* Progression générale */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Progression globale</span>
-          <span className="text-sm font-bold text-gray-900">
-            {Math.round((unlockedBadges.length / allBadges.length) * 100)}%
-          </span>
+      <div className="mb-6">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600">Progression globale</span>
+          <span className="font-medium text-gray-900">{completionRate}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2 rounded-full transition-all duration-500"
-            style={{ width: `${(unlockedBadges.length / allBadges.length) * 100}%` }}
-          ></div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-1000"
+            style={{ width: `${completionRate}%` }}
+          />
         </div>
       </div>
 
-      {/* Badges débloqués */}
+      {/* Badges récents débloqués */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-900 mb-3">
-          Badges débloqués ({unlockedBadges.length})
-        </h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {unlockedBadges.slice(0, 6).map((badge) => (
+        <h4 className="text-md font-medium text-gray-900 mb-3">Badges Récemment Débloqués</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {unlockedBadges.slice(-6).map((badge) => (
             <div
               key={badge.id}
-              className={`p-3 rounded-lg border-2 ${getRarityColor(badge.rarity)} transition-all duration-300 hover:scale-105 cursor-pointer`}
+              className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg text-center hover:shadow-md transition-all duration-200"
             >
-              <div className="text-center">
-                <div className="text-2xl mb-1">{badge.icon}</div>
-                <h5 className="text-xs font-medium text-gray-900 mb-1">
-                  {badge.name}
-                </h5>
-                <p className="text-xs text-gray-600 mb-2">
-                  {badge.description}
-                </p>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  badge.rarity === 'common' ? 'bg-gray-100 text-gray-700' :
-                  badge.rarity === 'rare' ? 'bg-blue-100 text-blue-700' :
-                  badge.rarity === 'epic' ? 'bg-purple-100 text-purple-700' :
-                  'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {getRarityText(badge.rarity)}
-                </span>
+              <div className="text-2xl mb-1">{badge.icon}</div>
+              <div className="text-xs font-medium text-gray-900 truncate">{badge.name}</div>
+              <div className={`text-xs px-1 py-0.5 rounded-full mt-1 ${getRarityColor(badge.rarity)}`}>
+                {getRarityText(badge.rarity)}
               </div>
             </div>
           ))}
         </div>
-        {unlockedBadges.length > 6 && (
-          <div className="text-center mt-3">
-            <Link 
-              href="/badges" 
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Voir tous les badges débloqués ({unlockedBadges.length})
-            </Link>
+        {unlockedBadges.length === 0 && (
+          <div className="text-center py-6 text-gray-500">
+            <div className="text-3xl mb-2">🎯</div>
+            <p className="text-sm">Aucun badge débloqué pour le moment</p>
+            <p className="text-xs">Continue à t'entraîner pour débloquer tes premiers badges !</p>
           </div>
         )}
       </div>
 
-      {/* Badges verrouillés (aperçu) */}
-      {lockedBadges.length > 0 && (
-        <div>
-          <h4 className="text-md font-semibold text-gray-900 mb-3">
-            Prochains objectifs ({lockedBadges.length})
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {lockedBadges.slice(0, 6).map((badge) => (
+      {/* Prochaines étapes */}
+      <div className="mb-6">
+        <h4 className="text-md font-medium text-gray-900 mb-3">Prochaines Étapes</h4>
+        <div className="space-y-2">
+          {allBadges
+            .filter(badge => !badge.unlocked)
+            .slice(0, 3)
+            .map((badge) => (
               <div
                 key={badge.id}
-                className="p-3 rounded-lg border-2 border-gray-200 bg-gray-50 opacity-60"
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
               >
-                <div className="text-center">
-                  <div className="text-2xl mb-1 filter grayscale">{badge.icon}</div>
-                  <h5 className="text-xs font-medium text-gray-500 mb-1">
-                    ???
-                  </h5>
-                  <p className="text-xs text-gray-400 mb-2">
-                    Badge verrouillé
-                  </p>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-500">
-                    À débloquer
-                  </span>
+                <div className="text-xl opacity-50">{badge.icon}</div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-900">{badge.name}</div>
+                  <div className="text-xs text-gray-600">{badge.description}</div>
+                </div>
+                <div className={`text-xs px-2 py-1 rounded-full ${getRarityColor(badge.rarity)}`}>
+                  {getRarityText(badge.rarity)}
                 </div>
               </div>
             ))}
-          </div>
-          {lockedBadges.length > 6 && (
-            <p className="text-xs text-gray-500 text-center mt-3">
-              +{lockedBadges.length - 6} autres badges à découvrir...
-            </p>
-          )}
         </div>
-      )}
+      </div>
 
-      {/* Statistiques des badges */}
-      <div className="mt-6 pt-4 border-t border-gray-200">
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <div className="text-lg font-bold text-gray-900">{unlockedBadges.length}</div>
-            <div className="text-xs text-gray-600">Badges débloqués</div>
+      {/* Statistiques par catégorie */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center p-3 bg-blue-50 rounded-lg">
+          <div className="text-lg font-bold text-blue-600">
+            {badgesByCategory.xp.filter(b => b.unlocked).length}
           </div>
-          <div>
-            <div className="text-lg font-bold text-gray-900">
-              {allBadges.filter(b => b.rarity === 'legendary' && b.unlocked).length}
-            </div>
-            <div className="text-xs text-gray-600">Légendaires</div>
+          <div className="text-xs text-blue-600">Badges XP</div>
+        </div>
+        <div className="text-center p-3 bg-green-50 rounded-lg">
+          <div className="text-lg font-bold text-green-600">
+            {badgesByCategory.streak.filter(b => b.unlocked).length}
           </div>
+          <div className="text-xs text-green-600">Badges Streak</div>
         </div>
       </div>
     </div>

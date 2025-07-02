@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { useWorkouts } from "../hooks/useWorkouts";
 import { useToast } from "./ToastNotification";
 
 interface Exercise {
@@ -19,14 +19,18 @@ interface WorkoutFormData {
   notes?: string;
 }
 
-export default function NewWorkoutForm() {
+interface NewWorkoutFormProps {
+  userId: string;
+}
+
+export default function NewWorkoutForm({ userId }: NewWorkoutFormProps) {
+  const { addWorkout, loading: isSubmitting } = useWorkouts(userId);
   const [formData, setFormData] = useState<WorkoutFormData>({
     name: "",
     exercises: [{ name: "", weight: 20, reps: 10, sets: 3, rest: 90 }],
     date: new Date().toISOString().split('T')[0],
     notes: ""
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingName, setIsGeneratingName] = useState(false);
   const { showSuccess, showError, showInfo } = useToast();
 
@@ -123,16 +127,7 @@ export default function NewWorkoutForm() {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        showError("Vous devez être connecté !");
-        return;
-      }
-
       // Déterminer le statut selon la date
       const selectedDate = new Date(formData.date);
       const today = new Date();
@@ -143,45 +138,15 @@ export default function NewWorkoutForm() {
 
       // Préparer les données de la séance
       const workoutData = {
-        user_id: user.id,
         name: formData.name.trim(),
         exercises: validExercises,
         date: formData.date,
-        status: status,
-        notes: formData.notes?.trim() || null
+        status: status as 'completed' | 'planned',
+        notes: formData.notes?.trim() || undefined
       };
 
-      // Insérer la séance
-      const { error: workoutError } = await supabase
-        .from('workouts')
-        .insert([workoutData]);
-
-      if (workoutError) {
-        console.error('Erreur lors de l\'ajout de la séance:', JSON.stringify(workoutError, null, 2));
-        showError("Erreur lors de l'ajout de la séance !");
-        return;
-      }
-
-      // Si c'est une séance complétée aujourd'hui, ajouter l'XP
-      if (status === 'completed') {
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Upsert dans daily_progress
-        const { error: progressError } = await supabase
-          .from('daily_progress')
-          .upsert({
-            user_id: user.id,
-            date: today,
-            xp_earned: 100,
-            workouts_completed: 1
-          }, {
-            onConflict: 'user_id,date'
-          });
-
-        if (progressError) {
-          console.error('Erreur lors de la mise à jour XP:', JSON.stringify(progressError, null, 2));
-        }
-      }
+      // Utiliser le hook pour ajouter la séance
+      await addWorkout(workoutData);
 
       // Réinitialiser le formulaire
       setFormData({
@@ -198,16 +163,9 @@ export default function NewWorkoutForm() {
         showSuccess(`📅 Séance "${formData.name}" planifiée pour le ${new Date(formData.date).toLocaleDateString('fr-FR')} !`, 5000);
       }
 
-      // Recharger la page pour mettre à jour les données
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-
     } catch (error) {
-      console.error('Erreur:', JSON.stringify(error, null, 2));
-      showError("Une erreur est survenue !");
-    } finally {
-      setIsSubmitting(false);
+      console.error('Erreur lors de l\'ajout de la séance:', error);
+      showError("Erreur lors de l'ajout de la séance !");
     }
   };
 
@@ -215,7 +173,7 @@ export default function NewWorkoutForm() {
   const isFuture = new Date(formData.date) > new Date();
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover-lift">
+    <div className="bg-white/20 backdrop-blur-md rounded-2xl border border-white/30 shadow-lg p-4 md:p-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="text-2xl animate-pulse">💪</div>
         <div>
@@ -294,89 +252,93 @@ export default function NewWorkoutForm() {
           <div className="overflow-x-auto pb-2">
             <div className="flex flex-col gap-3 min-w-[600px]">
               {formData.exercises.map((exercise, index) => (
-                <div key={index} className="flex flex-row gap-2 items-end w-full bg-gray-50 border border-gray-200 rounded-lg p-2 hover:bg-gray-100 transition-all duration-200 min-w-[600px]">
+                <div key={index} className="flex flex-col md:flex-row md:items-end gap-2 w-full bg-gray-50 border border-gray-200 rounded-lg p-2 hover:bg-gray-100 transition-all duration-200">
                   {/* Nom exercice */}
-                  <div className="flex flex-col min-w-[120px] flex-1">
+                  <div className="flex flex-col flex-1 min-w-0 max-w-xs w-full">
                     <input
                       id={`ex-name-${index}`}
                       type="text"
                       value={exercise.name}
                       onChange={(e) => updateExercise(index, 'name', e.target.value)}
-                      className="px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full max-w-xs h-9 px-3 py-1 border border-gray-300 rounded-md text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Squat"
                       required
                       onKeyDown={e => { if (e.key === 'Enter') { document.getElementById(`ex-weight-${index}`)?.focus(); } }}
                     />
                   </div>
                   {/* Poids */}
-                  <div className="flex flex-col min-w-[80px]">
+                  <div className="flex flex-col min-w-0 max-w-xs w-full md:min-w-[80px] md:max-w-[100px]">
                     <input
                       id={`ex-weight-${index}`}
                       type="number"
                       value={exercise.weight}
                       onChange={(e) => updateExercise(index, 'weight', parseFloat(e.target.value) || 0)}
-                      className={`px-2 py-1 border rounded-md text-sm focus:ring-2 ${exercise.weight < 0 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
+                      className={`w-full max-w-xs h-9 px-3 py-1 border rounded-md text-base focus:ring-2 ${exercise.weight < 0 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
                       placeholder="20"
                       min="0"
                       max="500"
                       required
                       onKeyDown={e => { if (e.key === 'Enter') { document.getElementById(`ex-reps-${index}`)?.focus(); } }}
                     />
+                    <span className="text-xs text-gray-400 ml-1">kg</span>
                     {exercise.weight < 0 && <span className="text-xs text-red-500">Poids ≥ 0</span>}
                   </div>
                   {/* Reps */}
-                  <div className="flex flex-col min-w-[60px]">
+                  <div className="flex flex-col min-w-0 max-w-xs w-full md:min-w-[70px] md:max-w-[90px]">
                     <input
                       id={`ex-reps-${index}`}
                       type="number"
                       value={exercise.reps}
                       onChange={(e) => updateExercise(index, 'reps', parseInt(e.target.value) || 1)}
-                      className={`px-2 py-1 border rounded-md text-sm focus:ring-2 ${exercise.reps < 1 || exercise.reps > 100 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
+                      className={`w-full max-w-xs h-9 px-3 py-1 border rounded-md text-base focus:ring-2 ${exercise.reps < 1 || exercise.reps > 100 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
                       placeholder="10"
                       min="1"
                       max="100"
                       required
                       onKeyDown={e => { if (e.key === 'Enter') { document.getElementById(`ex-sets-${index}`)?.focus(); } }}
                     />
+                    <span className="text-xs text-gray-400 ml-1">reps</span>
                     {(exercise.reps < 1 || exercise.reps > 100) && <span className="text-xs text-red-500">1-100</span>}
                   </div>
                   {/* Séries */}
-                  <div className="flex flex-col min-w-[60px]">
+                  <div className="flex flex-col min-w-0 max-w-xs w-full md:min-w-[70px] md:max-w-[90px]">
                     <input
                       id={`ex-sets-${index}`}
                       type="number"
                       value={exercise.sets}
                       onChange={(e) => updateExercise(index, 'sets', parseInt(e.target.value) || 1)}
-                      className={`px-2 py-1 border rounded-md text-sm focus:ring-2 ${exercise.sets < 1 || exercise.sets > 20 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
+                      className={`w-full max-w-xs h-9 px-3 py-1 border rounded-md text-base focus:ring-2 ${exercise.sets < 1 || exercise.sets > 20 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
                       placeholder="3"
                       min="1"
                       max="20"
                       required
                       onKeyDown={e => { if (e.key === 'Enter') { document.getElementById(`ex-rest-${index}`)?.focus(); } }}
                     />
+                    <span className="text-xs text-gray-400 ml-1">séries</span>
                     {(exercise.sets < 1 || exercise.sets > 20) && <span className="text-xs text-red-500">1-20</span>}
                   </div>
                   {/* Repos */}
-                  <div className="flex flex-col min-w-[70px]">
+                  <div className="flex flex-col min-w-0 max-w-xs w-full md:min-w-[80px] md:max-w-[100px]">
                     <input
                       id={`ex-rest-${index}`}
                       type="number"
                       value={typeof exercise.rest === 'number' ? exercise.rest : 90}
                       onChange={(e) => updateExercise(index, 'rest', parseInt(e.target.value) || 90)}
-                      className={`px-2 py-1 border rounded-md text-sm focus:ring-2 ${(typeof exercise.rest === 'number' ? exercise.rest : 90) < 30 || (typeof exercise.rest === 'number' ? exercise.rest : 90) > 300 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
+                      className={`w-full max-w-xs h-9 px-3 py-1 border rounded-md text-base focus:ring-2 ${(typeof exercise.rest === 'number' ? exercise.rest : 90) < 30 || (typeof exercise.rest === 'number' ? exercise.rest : 90) > 300 ? 'border-red-400 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
                       placeholder="90"
                       min="30"
                       max="300"
                       required
                       onKeyDown={e => { if (e.key === 'Enter') { if (isExerciseValid(exercise)) addExercise(); } }}
                     />
+                    <span className="text-xs text-gray-400 ml-1">sec</span>
                     {((typeof exercise.rest === 'number' ? exercise.rest : 90) < 30 || (typeof exercise.rest === 'number' ? exercise.rest : 90) > 300) && <span className="text-xs text-red-500">30-300</span>}
                   </div>
                   {/* Supprimer */}
                   <button
                     type="button"
                     onClick={() => removeExercise(index)}
-                    className="p-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors duration-200 focus-ring flex items-center justify-center ml-1"
+                    className="p-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors duration-200 focus-ring flex items-center justify-center ml-1 mt-2"
                     aria-label="Supprimer l'exercice"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

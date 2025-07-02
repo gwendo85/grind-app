@@ -28,12 +28,7 @@ export default function HeaderDashboardClient({ firstName, avatarUrl, recentBadg
         <div className="flex flex-col">
           <span className="text-lg font-semibold text-gray-900">Bienvenue {firstName} !</span>
           <span className="text-sm text-indigo-600 font-medium">
-            {(() => {
-              const hour = new Date().getHours();
-              if (hour < 12) return `☀️ Commence ta journée avec une séance, ${firstName} !`;
-              if (hour < 18) return `🚀 Une pause GRIND cet après-midi ?`;
-              return `🌙 Finis ta journée en force, ${firstName} !`;
-            })()}
+            💪 Hey {firstName}, c'est le moment de briller ! Ta séance t'attend !
           </span>
         </div>
       </div>

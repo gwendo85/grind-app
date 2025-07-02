@@ -84,6 +84,17 @@ export default function Navigation() {
             </Link>
             
             <Link
+              href="/social"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive("/social")
+                  ? "bg-blue-100 text-blue-700"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              👥 Communauté
+            </Link>
+            
+            <Link
               href="/badges"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive("/badges")
@@ -97,23 +108,25 @@ export default function Navigation() {
             {/* Profile Icon */}
             <Link
               href="/profile"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive("/profile")
                   ? "bg-blue-100 text-blue-700"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
+              title={profile?.display_name || user?.email || 'Profil'}
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-8 h-8 rounded-full border border-white/70 shadow bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                 {profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Avatar" 
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.display_name ? `Avatar de ${profile.display_name}` : 'Avatar'}
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
                   <span>{getInitials()}</span>
                 )}
               </div>
+              <span className="hidden sm:inline text-gray-700 text-xs font-medium max-w-[80px] truncate">{profile?.display_name || user?.email}</span>
             </Link>
 
             <button

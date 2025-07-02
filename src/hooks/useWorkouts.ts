@@ -1,211 +1,163 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Workout, WorkoutInsert, WorkoutUpdate } from '@/types/database';
+import { useState, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
-export function useWorkouts() {
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [loading, setLoading] = useState(true);
+export interface Workout {
+  id: string;
+  user_id: string;
+  name?: string;
+  date: string;
+  status: 'planned' | 'in_progress' | 'completed';
+  exercises: any[];
+  created_at: string;
+  updated_at: string;
+}
+
+export function useWorkouts(userId: string) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Récupérer tous les workouts
-  const fetchWorkouts = useCallback(async () => {
+  const addWorkout = useCallback(async (workoutData: Omit<Workout, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
-      
-      const { data, error } = await supabase
+      console.log('🏋️ [useWorkouts] Ajout d\'une séance...');
+      const { data, error: supabaseError } = await supabase
         .from('workouts')
-        .select('*')
-        .order('date', { ascending: false });
+        .insert([{
+          ...workoutData,
+          user_id: userId,
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
-      setWorkouts(data || []);
+      if (supabaseError) throw supabaseError;
+
+      console.log('✅ [useWorkouts] Séance ajoutée avec succès:', data.id);
+      
+      // Si c'est une séance complétée, ajouter l'XP
+      if (workoutData.status === 'completed') {
+        const today = new Date().toISOString().split('T')[0];
+        const { error: xpError } = await supabase
+          .from('daily_progress')
+          .upsert({
+            user_id: userId,
+            date: today,
+            xp_earned: 100,
+          }, {
+            onConflict: 'user_id,date'
+          });
+
+        if (xpError) {
+          console.error('❌ [useWorkouts] Erreur ajout XP:', xpError);
+        } else {
+          console.log('✅ [useWorkouts] XP ajouté (+100)');
+        }
+      }
+      
+      return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du chargement des séances");
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de l\'ajout de la séance';
+      setError(errorMessage);
+      console.error('❌ [useWorkouts] Erreur:', errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
-  // Ajouter un nouveau workout
-  const addWorkout = useCallback(async (workoutData: Omit<WorkoutInsert, 'user_id'>) => {
+  const updateWorkout = useCallback(async (workoutId: string, updates: Partial<Workout>) => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setError(null);
-      
-      // Vérifier que l'utilisateur est connecté
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("Vous devez être connecté pour ajouter une séance");
-      }
-
-      // Insérer le workout
-      const { data: workout, error: workoutError } = await supabase
-        .from('workouts')
-        .insert({
-          ...workoutData,
-          user_id: user.id
-        })
-        .select()
-        .single();
-
-      if (workoutError) throw workoutError;
-
-      // Ajouter les points XP
-      const { error: xpError } = await supabase
-        .from('xp_logs')
-        .insert({
-          user_id: user.id,
-          workout_id: workout.id,
-          xp_points: 100,
-          activity_type: 'workout',
-          description: `Séance: ${workoutData.name}`
-        });
-
-      if (xpError) throw xpError;
-
-      // Mettre à jour l'état local
-      setWorkouts(prev => [workout, ...prev]);
-
-      return workout;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erreur lors de l'ajout de la séance";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    }
-  }, []);
-
-  // Mettre à jour un workout
-  const updateWorkout = useCallback(async (workoutId: string, updates: WorkoutUpdate) => {
-    try {
-      setError(null);
-      
-      const { data, error } = await supabase
+      const { data, error: supabaseError } = await supabase
         .from('workouts')
         .update(updates)
         .eq('id', workoutId)
+        .eq('user_id', userId)
         .select()
         .single();
 
-      if (error) throw error;
-
-      // Mettre à jour l'état local
-      setWorkouts(prev => 
-        prev.map(workout => 
-          workout.id === workoutId ? data : workout
-        )
-      );
-
+      if (supabaseError) throw supabaseError;
+      
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erreur lors de la mise à jour";
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la mise à jour de la séance';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
-  // Supprimer un workout
   const deleteWorkout = useCallback(async (workoutId: string) => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setError(null);
-      
-      const { error } = await supabase
+      const { error: supabaseError } = await supabase
         .from('workouts')
         .delete()
-        .eq('id', workoutId);
+        .eq('id', workoutId)
+        .eq('user_id', userId);
 
-      if (error) throw error;
-
-      // Mettre à jour l'état local
-      setWorkouts(prev => prev.filter(workout => workout.id !== workoutId));
+      if (supabaseError) throw supabaseError;
+      
+      return true;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erreur lors de la suppression";
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la suppression de la séance';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
-  // Récupérer les statistiques
-  const getStats = useCallback(() => {
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
+  const completeWorkout = useCallback(async (workoutId: string, xpEarned: number = 100) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Mettre à jour le statut de la séance
+      const { error: workoutError } = await supabase
+        .from('workouts')
+        .update({ status: 'completed' })
+        .eq('id', workoutId)
+        .eq('user_id', userId);
 
-    const workoutsThisMonth = workouts.filter(workout => {
-      const workoutDate = new Date(workout.date);
-      return workoutDate.getMonth() === thisMonth && workoutDate.getFullYear() === thisYear;
-    });
+      if (workoutError) throw workoutError;
 
-    const totalWorkouts = workouts.length;
-    const workoutsThisMonthCount = workoutsThisMonth.length;
+      // Ajouter l'XP gagné
+      const today = new Date().toISOString().split('T')[0];
+      const { error: xpError } = await supabase
+        .from('daily_progress')
+        .upsert({
+          user_id: userId,
+          date: today,
+          xp_earned: xpEarned,
+        }, {
+          onConflict: 'user_id,date'
+        });
 
-    // Calculer la série actuelle (jours consécutifs avec des workouts)
-    let currentStreak = 0;
-    let longestStreak = 0;
-    let tempStreak = 0;
-    let lastDate: Date | null = null;
-
-    // Trier par date décroissante pour calculer les séries
-    const sortedWorkouts = [...workouts].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-
-    for (const workout of sortedWorkouts) {
-      const workoutDate = new Date(workout.date);
-      const workoutDateStr = workoutDate.toDateString();
-
-      if (!lastDate) {
-        lastDate = workoutDate;
-        tempStreak = 1;
-        currentStreak = 1;
-        longestStreak = 1;
-        continue;
-      }
-
-      const lastDateStr = lastDate.toDateString();
-      const daysDiff = Math.floor((lastDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff === 1) {
-        // Jour consécutif
-        tempStreak++;
-        if (tempStreak > longestStreak) {
-          longestStreak = tempStreak;
-        }
-        if (workoutDateStr === lastDateStr) {
-          // Même jour, continuer la série
-          continue;
-        }
-      } else if (daysDiff === 0) {
-        // Même jour, continuer la série
-        continue;
-      } else {
-        // Série brisée
-        tempStreak = 1;
-      }
-
-      lastDate = workoutDate;
+      if (xpError) throw xpError;
+      
+      return true;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors de la finalisation de la séance';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-
-    return {
-      totalWorkouts,
-      workoutsThisMonth: workoutsThisMonthCount,
-      currentStreak,
-      longestStreak
-    };
-  }, [workouts]);
-
-  // Charger les workouts au montage du composant
-  useEffect(() => {
-    fetchWorkouts();
-  }, [fetchWorkouts]);
+  }, [userId]);
 
   return {
-    workouts,
     loading,
     error,
     addWorkout,
     updateWorkout,
     deleteWorkout,
-    fetchWorkouts,
-    getStats
+    completeWorkout,
   };
 } 
