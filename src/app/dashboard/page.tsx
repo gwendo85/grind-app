@@ -132,7 +132,7 @@ export default async function DashboardPage() {
       avatarUrl={avatarUrl}
       recentBadges={recentBadges}
       plannedWorkouts={plannedWorkoutsList}
-      workouts={workouts}
+      workouts={workouts ?? undefined}
       currentWeekStart={currentWeekStart}
       weeklyXP={weeklyXP}
       workoutsThisWeek={workoutsThisWeek}
