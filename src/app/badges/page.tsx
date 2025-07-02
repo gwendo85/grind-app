@@ -61,12 +61,7 @@ export default async function BadgesPage() {
         </div>
 
         {/* Système de badges complet */}
-        <BadgeSystem 
-          totalXP={totalXP}
-          totalWorkouts={workouts?.length || 0}
-          currentStreak={streakData.currentStreak}
-          longestStreak={streakData.longestStreak}
-        />
+        <BadgeSystem userId={user.id} />
 
         {/* Informations sur les badges */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
