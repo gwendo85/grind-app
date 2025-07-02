@@ -2,6 +2,7 @@
 import React from "react";
 import UserBadgeMiniList from "@/components/UserBadgeMiniList";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface HeaderDashboardClientProps {
   firstName: string;
@@ -36,20 +37,24 @@ export default function HeaderDashboardClient({ firstName, avatarUrl, recentBadg
         <UserBadgeMiniList badges={recentBadges} />
       </div>
       <div className="mt-4 sm:mt-0">
-        {hasPlanned ? (
+        {hasPlanned && plannedId ? (
+          <Link
+            href={`/session/${plannedId}`}
+            className="inline-block bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-bold py-2 px-5 rounded-full shadow-lg hover:scale-105 transition-transform text-base animate-bounce text-center"
+          >
+            ⚡ Démarrer ma séance planifiée
+          </Link>
+        ) : (
           <button
-            onClick={() => router.push(`/session/${plannedId}`)}
-            className="inline-block bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-bold py-2 px-5 rounded-full shadow-lg hover:scale-105 transition-transform text-base animate-bounce"
+            className="inline-block bg-gradient-to-r from-yellow-400 via-orange-400 to-pink-500 text-white font-bold py-2 px-5 rounded-full shadow-lg text-base opacity-50 cursor-not-allowed"
+            disabled
           >
             ⚡ Démarrer ma séance planifiée
           </button>
-        ) : (
-          <button
-            onClick={() => router.push('/new-workout')}
-            className="inline-block bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 text-white font-bold py-2 px-5 rounded-full shadow-lg hover:scale-105 transition-transform text-base animate-bounce"
-          >
-            🚀 Démarrer une séance
-          </button>
+        )}
+        {/* Debug temporaire : afficher l'id de la séance planifiée */}
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="mt-2 text-xs text-gray-500">plannedId: {String(plannedId)}</div>
         )}
       </div>
     </div>

@@ -22,12 +22,16 @@ export default async function ProfilePage() {
     .single();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ProfileClient 
-        userId={user.id}
-        profile={profile}
-        user={user}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-100 to-white">
+      <div className="flex flex-col items-center justify-center px-2 py-8 sm:py-12">
+        <div className="w-full max-w-2xl mx-auto mt-6 sm:mt-10 px-2 py-6 sm:px-6 sm:py-8">
+          <ProfileClient 
+            userId={user.id}
+            profile={profile}
+            user={user}
+          />
+        </div>
+      </div>
     </div>
   );
 } 
