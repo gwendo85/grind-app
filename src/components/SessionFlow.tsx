@@ -113,7 +113,7 @@ export default function SessionFlow({ workout, savedExerciseIndex = 0, savedSetI
     pause,
     resume,
     skipRest,
-    showQuitModal: showModal,
+    openQuitModal,
     hideQuitModal: hideModal,
     handleQuitAction,
     
@@ -236,7 +236,7 @@ export default function SessionFlow({ workout, savedExerciseIndex = 0, savedSetI
         <button className="btn btn-outline" onClick={() => setVoiceEnabled(!voiceEnabled)}>
           {voiceEnabled ? '🗣️ Voix ON' : '🔕 Voix OFF'}
         </button>
-        <button className="btn btn-outline text-red-600" onClick={showModal}>
+        <button className="btn btn-outline text-red-600" onClick={openQuitModal}>
           Quitter
         </button>
       </div>

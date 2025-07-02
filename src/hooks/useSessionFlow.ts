@@ -339,7 +339,7 @@ export function useSessionFlow(workout: Workout, savedExerciseIndex = 0, savedSe
     pause,
     resume,
     skipRest,
-    showQuitModal,
+    openQuitModal: showQuitModal,
     hideQuitModal,
     handleQuitAction,
     
